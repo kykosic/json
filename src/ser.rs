@@ -2,7 +2,6 @@
 
 use crate::error::{Error, ErrorCode, Result};
 use crate::io;
-use crate::lib::num::FpCategory;
 use crate::lib::*;
 use serde::ser::{self, Impossible, Serialize};
 use serde::serde_if_integer128;
@@ -170,39 +169,19 @@ where
 
     #[inline]
     fn serialize_f32(self, value: f32) -> Result<()> {
-        match value.classify() {
-            FpCategory::Nan | FpCategory::Infinite => {
-                tri!(self
-                    .formatter
-                    .write_null(&mut self.writer)
-                    .map_err(Error::io));
-            }
-            _ => {
-                tri!(self
-                    .formatter
-                    .write_f32(&mut self.writer, value)
-                    .map_err(Error::io));
-            }
-        }
+        tri!(self
+            .formatter
+            .write_f32(&mut self.writer, value)
+            .map_err(Error::io));
         Ok(())
     }
 
     #[inline]
     fn serialize_f64(self, value: f64) -> Result<()> {
-        match value.classify() {
-            FpCategory::Nan | FpCategory::Infinite => {
-                tri!(self
-                    .formatter
-                    .write_null(&mut self.writer)
-                    .map_err(Error::io));
-            }
-            _ => {
-                tri!(self
-                    .formatter
-                    .write_f64(&mut self.writer, value)
-                    .map_err(Error::io));
-            }
-        }
+        tri!(self
+            .formatter
+            .write_f64(&mut self.writer, value)
+            .map_err(Error::io));
         Ok(())
     }
 
@@ -1708,9 +1687,19 @@ pub trait Formatter {
     where
         W: ?Sized + io::Write,
     {
-        let mut buffer = ryu::Buffer::new();
-        let s = buffer.format_finite(value);
-        writer.write_all(s.as_bytes())
+        if value.is_finite() {
+            let mut buffer = ryu::Buffer::new();
+            let s = buffer.format_finite(value);
+            writer.write_all(s.as_bytes())
+        } else if value.is_nan() {
+            writer.write_all(b"NaN")
+        } else if value.is_sign_positive() {
+            // Match the Python json module +inf representation
+            writer.write_all(b"Infinity")
+        } else {
+            // Match the Python json module -inf representation
+            writer.write_all(b"-Infinity")
+        }
     }
 
     /// Writes a floating point value like `-31.26e+12` to the specified writer.
@@ -1719,9 +1708,19 @@ pub trait Formatter {
     where
         W: ?Sized + io::Write,
     {
-        let mut buffer = ryu::Buffer::new();
-        let s = buffer.format_finite(value);
-        writer.write_all(s.as_bytes())
+        if value.is_finite() {
+            let mut buffer = ryu::Buffer::new();
+            let s = buffer.format_finite(value);
+            writer.write_all(s.as_bytes())
+        } else if value.is_nan() {
+            writer.write_all(b"NaN")
+        } else if value.is_sign_positive() {
+            // Match the Python json module +inf representation
+            writer.write_all(b"Infinity")
+        } else {
+            // Match the Python json module -inf representation
+            writer.write_all(b"-Infinity")
+        }
     }
 
     /// Writes a number that has already been rendered to a string.

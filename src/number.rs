@@ -246,8 +246,8 @@ impl Number {
         self.n.parse::<f64>().ok().filter(|float| float.is_finite())
     }
 
-    /// Converts a finite `f64` to a `Number`. Infinite or NaN values are not JSON
-    /// numbers.
+    /// Converts a finite `f64` to a `Number`. Infinite or NaN values *are* JSON
+    /// numbers when encoded by the Python standard library.
     ///
     /// ```
     /// # use std::f64;
@@ -256,25 +256,23 @@ impl Number {
     /// #
     /// assert!(Number::from_f64(256.0).is_some());
     ///
-    /// assert!(Number::from_f64(f64::NAN).is_none());
+    /// assert!(Number::from_f64(f64::NAN).is_some());
+    ///
+    /// assert!(Number::from_f64(f64::INFINITY).is_some());
     /// ```
     #[inline]
     pub fn from_f64(f: f64) -> Option<Number> {
-        if f.is_finite() {
-            let n = {
-                #[cfg(not(feature = "arbitrary_precision"))]
-                {
-                    N::Float(f)
-                }
-                #[cfg(feature = "arbitrary_precision")]
-                {
-                    ryu::Buffer::new().format_finite(f).to_owned()
-                }
-            };
-            Some(Number { n })
-        } else {
-            None
-        }
+        let n = {
+            #[cfg(not(feature = "arbitrary_precision"))]
+            {
+                N::Float(f)
+            }
+            #[cfg(feature = "arbitrary_precision")]
+            {
+                ryu::Buffer::new().format_finite(f).to_owned()
+            }
+        };
+        Some(Number { n })
     }
 
     #[cfg(feature = "arbitrary_precision")]

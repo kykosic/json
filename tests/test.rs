@@ -147,24 +147,23 @@ fn test_write_f64() {
         (f64::MIN, "-1.7976931348623157e308"),
         (f64::MAX, "1.7976931348623157e308"),
         (f64::EPSILON, "2.220446049250313e-16"),
+        (f64::NAN, "NaN"),
+        (f64::INFINITY, "Infinity"),
+        (f64::NEG_INFINITY, "-Infinity"),
     ];
     test_encode_ok(tests);
     test_pretty_encode_ok(tests);
 }
 
 #[test]
-fn test_encode_nonfinite_float_yields_null() {
-    let v = to_value(::std::f64::NAN).unwrap();
-    assert!(v.is_null());
-
-    let v = to_value(::std::f64::INFINITY).unwrap();
-    assert!(v.is_null());
-
-    let v = to_value(::std::f32::NAN).unwrap();
-    assert!(v.is_null());
-
-    let v = to_value(::std::f32::INFINITY).unwrap();
-    assert!(v.is_null());
+fn test_write_f32_nonfinite() {
+    let tests = &[
+        (f32::NAN, "NaN"),
+        (f32::INFINITY, "Infinity"),
+        (f32::NEG_INFINITY, "-Infinity"),
+    ];
+    test_encode_ok(tests);
+    test_pretty_encode_ok(tests);
 }
 
 #[test]
